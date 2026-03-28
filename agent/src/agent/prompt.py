@@ -10,6 +10,11 @@ This is where you define your agent's strategy:
 
 from __future__ import annotations
 
+import io
+import json
+
+from pydantic_ai import Agent, BinaryContent
+
 from core import Frame
 
 # ---------------------------------------------------------------------------
@@ -17,47 +22,81 @@ from core import Frame
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """\
-You are playing a visual guessing game. You will receive a screenshot from a
-live camera feed. Your goal is to identify what is being shown as quickly and
-accurately as possible.
+You are playing charades. A person is acting out a word/phrase WITHOUT speaking.
+
+Reply with ONLY a JSON object:
+{"guess": "your guess", "reasoning": "what you see", "confidence": "high/medium/low"}
 
 Rules:
-- Give your best guess as a short, specific answer (1-5 words).
-- If you're not confident enough yet, respond with exactly "SKIP".
-- Be specific: "golden retriever" is better than "dog".
-- You only get to see one frame at a time, so make it count.
+- ALWAYS guess. Never skip.
+- NEVER repeat a wrong guess. If told a guess was wrong, try something COMPLETELY different.
+- Think broadly: animals, actions, movies, sports, objects, emotions, professions
+- Be specific: "swimming" not "moving arms"
 """
+
+agent = Agent(
+    'openrouter:google/gemini-3-flash-preview',
+    system_prompt=SYSTEM_PROMPT,
+)
 
 
 async def analyze(frame: Frame) -> str | None:
-    """Analyze a single frame and return a guess, or None to skip.
+    result = await _analyze_with_usage(frame)
+    return result[0]
 
-    This is the core function you should customize. The default
-    implementation is a simple placeholder that always skips.
 
-    Args:
-        frame: A Frame with .image (PIL Image) and .timestamp.
+async def _analyze_with_usage(
+    frame: Frame,
+    wrong_guesses: list[str] | None = None,
+) -> tuple[str | None, dict, dict]:
+    """Analyze a frame and return (guess, usage_dict, detail_dict)."""
+    # Resize image to save tokens — max 512px wide
+    img = frame.image
+    if img.width > 512:
+        ratio = 512 / img.width
+        img = img.resize((512, int(img.height * ratio)))
 
-    Returns:
-        A text guess string, or None to skip this frame.
-    """
-    # -----------------------------------------------------------------
-    # TODO: Replace this with your actual vision LLM call.
-    #
-    # Example with pydantic-ai:
-    #
-    #   from pydantic_ai import Agent
-    #   agent = Agent("claude-sonnet-4-20250514", system_prompt=SYSTEM_PROMPT)
-    #   result = await agent.run(
-    #       "What do you see in this image?",
-    #       # attach the frame image here
-    #   )
-    #   answer = result.output.strip()
-    #   return None if answer == "SKIP" else answer
-    # -----------------------------------------------------------------
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=60)
+    image_bytes = buf.getvalue()
 
-    print(f"  [agent] Got frame at {frame.timestamp.isoformat()} "
-          f"({frame.image.size[0]}x{frame.image.size[1]})")
-    print("  [agent] No LLM configured yet — edit agent/prompt.py!")
+    # Build user prompt with wrong guesses
+    user_prompt = "What is this person acting out in charades?"
+    if wrong_guesses:
+        wrong_list = ", ".join(wrong_guesses)
+        user_prompt += (
+            f"\n\nWRONG guesses (DO NOT repeat any of these): {wrong_list}"
+            f"\nYou MUST guess something different from all of the above."
+        )
 
-    return None
+    result = await agent.run(
+        [
+            user_prompt,
+            BinaryContent(data=image_bytes, media_type='image/jpeg'),
+        ]
+    )
+
+    raw_output = result.output.strip()
+
+    # Parse structured response
+    guess = None
+    detail = {"reasoning": "", "confidence": "", "raw": raw_output}
+
+    try:
+        parsed = json.loads(raw_output)
+        guess = parsed.get("guess", "").strip()
+        detail["reasoning"] = parsed.get("reasoning", "")
+        detail["confidence"] = parsed.get("confidence", "")
+        if not guess or guess.upper() == "SKIP":
+            guess = None
+    except json.JSONDecodeError:
+        guess = raw_output if raw_output.upper() != "SKIP" else None
+
+    usage = result.usage()
+    usage_dict = {
+        "request_tokens": usage.request_tokens or 0,
+        "response_tokens": usage.response_tokens or 0,
+        "total_tokens": usage.total_tokens or 0,
+    }
+
+    return guess, usage_dict, detail

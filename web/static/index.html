@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casper Agent Charades</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Agent Charades</h1>
+            <p class="subtitle">AI-powered charades guesser by Casper Studios</p>
+        </header>
+
+        <div class="main-layout">
+            <div class="video-section">
+                <div class="word-input-section">
+                    <label for="target-word">Word / Phrase to Act Out</label>
+                    <input type="text" id="target-word" placeholder="e.g. swimming, elephant, Harry Potter..." autocomplete="off">
+                </div>
+                <div class="video-wrapper">
+                    <video id="webcam" autoplay playsinline muted></video>
+                    <canvas id="capture-canvas" style="display: none;"></canvas>
+                    <div id="status-overlay" class="status-overlay">
+                        <span id="status-text">Click Start to begin</span>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="btn-start" class="btn btn-primary">Start</button>
+                    <button id="btn-stop" class="btn btn-danger" disabled>Stop</button>
+                    <div class="fps-control">
+                        <label for="fps-slider">FPS:</label>
+                        <input type="range" id="fps-slider" min="0.5" max="3" step="0.5" value="1">
+                        <span id="fps-value">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="guess-section">
+                <div class="current-guess">
+                    <h2>Current Guess</h2>
+                    <div id="current-guess-text" class="guess-display">-</div>
+                    <div id="match-indicator" class="match-indicator hidden"></div>
+                    <div id="reasoning" class="reasoning"></div>
+                    <div id="confidence-badge" class="confidence-badge"></div>
+                    <button id="btn-next-word" class="btn btn-next" style="display:none;">Next Word</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-label">Frames</span>
+                        <span id="frame-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Guesses</span>
+                        <span id="guess-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Remaining</span>
+                        <span id="guess-limit" class="stat-value">10</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Total Tokens</span>
+                        <span id="total-tokens" class="stat-value">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Input Tokens</span>
+                        <span id="input-tokens" class="stat-value">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Output Tokens</span>
+                        <span id="output-tokens" class="stat-value">0</span>
+                    </div>
+                </div>
+
+                <div class="guess-log">
+                    <h3>Guess History</h3>
+                    <div id="guess-list" class="guess-list">
+                        <p class="empty-state">No guesses yet. Start the camera!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

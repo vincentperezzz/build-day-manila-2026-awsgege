@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import platform
+import re
 import shutil
+import subprocess
 from datetime import datetime, timezone
 from typing import AsyncIterator
 
@@ -31,6 +33,23 @@ def _detect_ffmpeg() -> str:
     )
 
 
+def _resolve_dshow_device(ffmpeg: str, camera_index: int) -> str:
+    """Resolve a camera index to a DirectShow device name on Windows."""
+    try:
+        result = subprocess.run(
+            [ffmpeg, "-list_devices", "true", "-f", "dshow", "-i", "dummy"],
+            capture_output=True, text=True, timeout=10,
+        )
+        # Device names appear in stderr as: "DeviceName" (video)
+        video_devices = re.findall(r'"([^"]+)"\s+\(video\)', result.stderr)
+        if camera_index < len(video_devices):
+            return f"video={video_devices[camera_index]}"
+    except Exception:
+        pass
+    # Fallback to raw index
+    return f"video={camera_index}"
+
+
 def _build_capture_cmd(ffmpeg: str, camera_index: int) -> list[str]:
     """Build a platform-appropriate ffmpeg command for single-frame capture."""
     system = platform.system()
@@ -44,7 +63,8 @@ def _build_capture_cmd(ffmpeg: str, camera_index: int) -> list[str]:
         device = str(camera_index)
     elif system == "Windows":
         input_fmt = ["-f", "dshow"]
-        device = f"video={camera_index}"
+        # dshow needs actual device name; resolve index via device list
+        device = _resolve_dshow_device(ffmpeg, camera_index)
     else:
         input_fmt = ["-f", "v4l2"]
         device = f"/dev/video{camera_index}"
