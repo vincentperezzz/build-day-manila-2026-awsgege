@@ -138,7 +138,9 @@ async def start_practice(
     try:
         test_frame = await _capture_one_frame(cmd)
         print(f"[practice] Camera {camera_index} ready "
-              f"({test_frame.size[0]}x{test_frame.size[1]}).\n")
+              f"({test_frame.size[0]}x{test_frame.size[1]}).")
+        print("[practice] Warmup: 2 seconds...\n")
+        await asyncio.sleep(2)
     except Exception as exc:
         print(f"[!] Could not capture from camera {camera_index}: {exc}")
         return

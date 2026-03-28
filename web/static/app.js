@@ -19,6 +19,8 @@ const targetWordInput = document.getElementById('target-word');
 const totalTokensEl = document.getElementById('total-tokens');
 const inputTokensEl = document.getElementById('input-tokens');
 const outputTokensEl = document.getElementById('output-tokens');
+const sentFramePreview = document.getElementById('sent-frame-preview');
+const sentFrameCtx = sentFramePreview.getContext('2d');
 
 const MAX_GUESSES = 10;
 
@@ -66,6 +68,8 @@ document.getElementById('btn-next-word').addEventListener('click', () => {
     document.getElementById('btn-next-word').style.display = 'none';
     // Clear guess history
     guessList.innerHTML = '<p class="empty-state">No guesses yet. Start the camera!</p>';
+    // Reset agent's internal wrong-guess tracking
+    fetch('/api/reset', { method: 'POST' });
     targetWordInput.focus();
 });
 
@@ -90,10 +94,14 @@ function startAnalyzing() {
     btnStart.disabled = true;
     btnStop.disabled = false;
     statusOverlay.classList.add('active');
-    statusText.textContent = 'Analyzing...';
+    statusText.textContent = 'Get ready... (2s warmup)';
 
-    const fps = parseFloat(fpsSlider.value);
-    intervalId = setInterval(captureAndAnalyze, 1000 / fps);
+    // 2-second warmup before first frame
+    setTimeout(() => {
+        statusText.textContent = 'Analyzing...';
+        const fps = parseFloat(fpsSlider.value);
+        intervalId = setInterval(captureAndAnalyze, 1000 / fps);
+    }, 2000);
 }
 
 function stopAnalyzing() {
@@ -118,7 +126,12 @@ async function captureAndAnalyze() {
     isProcessing = true;
 
     ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
+
+    // Show captured frame in preview
+    sentFramePreview.width = canvas.width;
+    sentFramePreview.height = canvas.height;
+    sentFrameCtx.drawImage(canvas, 0, 0);
 
     frameCount++;
     frameCountEl.textContent = frameCount;

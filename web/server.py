@@ -82,9 +82,17 @@ async def analyze_frame(request: Request) -> JSONResponse:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+async def reset_agent(request: Request) -> JSONResponse:
+    """Reset the agent's internal wrong-guess tracking."""
+    from agent.prompt import reset
+    reset()
+    return JSONResponse({"ok": True})
+
+
 routes = [
     Route("/", homepage),
     Route("/api/analyze", analyze_frame, methods=["POST"]),
+    Route("/api/reset", reset_agent, methods=["POST"]),
     Mount("/static", StaticFiles(directory="web/static"), name="static"),
 ]
 

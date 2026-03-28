@@ -178,6 +178,28 @@ header h1 {
     accent-color: #6366f1;
 }
 
+.sent-frame-section {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.sent-frame-section label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.sent-frame-canvas {
+    width: 100%;
+    border-radius: 8px;
+    background: #0a0a0f;
+}
+
 /* Guess Section */
 .guess-section {
     display: flex;

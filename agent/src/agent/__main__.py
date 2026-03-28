@@ -43,8 +43,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--fps",
         type=int,
-        default=1,
-        help="Frames per second to sample (default: 1)",
+        default=6,
+        help="Frames per second to sample (default: 6)",
     )
     return parser.parse_args()
 
@@ -53,7 +53,9 @@ async def run_practice(camera: int, fps: int) -> None:
     """Run the agent in practice mode with a local camera."""
     from core import start_practice
 
-    from agent.prompt import analyze
+    from agent.prompt import analyze, reset
+
+    reset()
 
     print("=" * 50)
     print("  PRACTICE MODE")
@@ -80,7 +82,9 @@ async def run_live() -> None:
     )
     from core import start_stream
 
-    from agent.prompt import analyze
+    from agent.prompt import analyze, reset
+
+    reset()
 
     print("=" * 50)
     print("  LIVE MODE")
