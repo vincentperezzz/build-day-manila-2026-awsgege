@@ -37,8 +37,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--camera",
         type=int,
-        default=0,
-        help="Camera device index for practice mode (default: 0)",
+        default=1,
+        help="Camera device index for practice mode (default: 1)",
     )
     parser.add_argument(
         "--fps",
